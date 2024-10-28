@@ -1,5 +1,12 @@
 FROM fedora:latest
 
+LABEL name="AlexStorm1313/codium" \
+    vendor="AlexStorm1313" \
+    version="0.0.1" \
+    release="1" \
+    summary="Cloud native Codium" \
+    description="Cloud native variant of Codium IDE accessible through a browser"
+
 # Enable RPMFusion & copr & flatpak
 RUN dnf -y update && \ 
     dnf -y install dnf-plugins-core https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
