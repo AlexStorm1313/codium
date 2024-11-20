@@ -114,8 +114,8 @@ RUN oc completion bash >> /etc/bash_completion.d/oc.bash_completion && \
 
 # User and permissions, a.k.a. userspace
 ARG USER=codium
-ARG UUID=1001
-ARG GUID=0
+ARG UID=1001
+ARG GID=0
 ARG HOME_DIR=/home/${USER}
 
 # Add the user
@@ -165,11 +165,11 @@ RUN echo 'eval "$(starship init bash)"' >> ${HOME_DIR}/.bashrc && \
 # UID=1001 && GID=0
 # UID=<any>&& GID=0
 # UID=1001 && GID=<any>
-RUN chown -R ${UUID}:${GUID} ${HOME_DIR} && \
+RUN chown -R ${UID}:${GID} ${HOME_DIR} && \
     chmod -R g=u ${HOME_DIR}
 
 # Set fixed non-root user for compatibility with Podman/Docker and Kubernetes
-USER 1001
+USER ${UID}
 
 # Start openvscode-server
 ENV PORT=3000
