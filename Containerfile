@@ -8,7 +8,7 @@ LABEL name="AlexStorm1313/codium" \
     description="Cloud native variant of Codium IDE accessible through a browser"
 
 # Enable RPMFusion & copr & flatpak
-RUN dnf -y update && \ 
+RUN dnf -y update && \
     dnf -y install dnf-plugins-core https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
     # dnf -y update && \
     dnf -y copr enable atim/starship && \
@@ -42,6 +42,9 @@ RUN dnf -y update && \
     python3-neovim \
     ripgrep \
     fira-code-fonts \
+    rustup \
+    cargo \
+    rust \
     @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin && \
     dnf -y swap ffmpeg-free ffmpeg --allowerasing && \
     dnf -y clean all
@@ -91,9 +94,14 @@ RUN ${OPENVSCODE_SERVER} --force \
     --install-extension ms-toolsai.jupyter
 
 # Install Rust and Cargo tools
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-    cargo install cargo-watch && \
-    cargo install diesel_cli --no-default-features --features "postgres mysql"
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+#     cargo install cargo-watch && \
+#     cargo install diesel_cli --no-default-features --features "postgres mysql"
+
+RUN cargo install cargo-watch --locked && \
+    cargo install cargo-lints --locked && \
+    cargo install diesel_cli --locked --no-default-features --features "postgres mysql"
+
 
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | sh
