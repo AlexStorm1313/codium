@@ -87,7 +87,7 @@ RUN ${OPENVSCODE_SERVER} --force \
     --install-extension tamasfe.even-better-toml \
     --install-extension redhat.vscode-yaml \ 
     --install-extension serayuzgur.crates \
-    --install-extension rjmacarthy.twinny \
+    --install-extension Continue.continue \
     --install-extension ms-toolsai.jupyter \
     --install-extension ms-azuretools.vscode-docker \
     --install-extension ms-kubernetes-tools.vscode-kubernetes-tools
