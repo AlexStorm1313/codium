@@ -54,7 +54,7 @@ ENV PATH=${HOME_DIR}/.cargo/bin:${HOME_DIR}/.bun/bin:${HOME_DIR}/.local/bin:${PA
 WORKDIR ${HOME_DIR}
 
 # Specify openvscode-server release, SHOULD MOVE THIS DOWN AFTER INSTALLING TOOLING
-ARG OPENVSCODE_SERVER_RELEASE_VERSION=1.95.2
+ARG OPENVSCODE_SERVER_RELEASE_VERSION=1.96.4
 ARG OPENVSCODE_SERVER_RELEASE_TAG=openvscode-server-v${OPENVSCODE_SERVER_RELEASE_VERSION}
 ARG OPENVSCODE_SERVER_RELEASE_ORG=gitpod-io
 ARG OPENVSCODE_SERVER_INSTALL_DIR=${HOME_DIR}/.openvscode-server
@@ -90,7 +90,8 @@ RUN ${OPENVSCODE_SERVER} --force \
     --install-extension Continue.continue \
     --install-extension ms-toolsai.jupyter \
     --install-extension ms-azuretools.vscode-docker \
-    --install-extension ms-kubernetes-tools.vscode-kubernetes-tools
+    --install-extension ms-kubernetes-tools.vscode-kubernetes-tools \
+    --install-extension usernamehw.errorlens
 
 # Install Rust and Cargo tools
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
