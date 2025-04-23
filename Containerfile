@@ -42,6 +42,7 @@ RUN dnf -y update && \
     python3-neovim \
     ripgrep \
     fira-code-fonts \
+    perl \
     @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin && \
     dnf -y swap ffmpeg-free ffmpeg --allowerasing && \
     dnf -y clean all
@@ -54,7 +55,7 @@ ENV PATH=${HOME_DIR}/.cargo/bin:${HOME_DIR}/.bun/bin:${HOME_DIR}/.local/bin:${PA
 WORKDIR ${HOME_DIR}
 
 # Specify openvscode-server release, SHOULD MOVE THIS DOWN AFTER INSTALLING TOOLING
-ARG OPENVSCODE_SERVER_RELEASE_VERSION=1.96.4
+ARG OPENVSCODE_SERVER_RELEASE_VERSION=1.98.2
 ARG OPENVSCODE_SERVER_RELEASE_TAG=openvscode-server-v${OPENVSCODE_SERVER_RELEASE_VERSION}
 ARG OPENVSCODE_SERVER_RELEASE_ORG=gitpod-io
 ARG OPENVSCODE_SERVER_INSTALL_DIR=${HOME_DIR}/.openvscode-server
