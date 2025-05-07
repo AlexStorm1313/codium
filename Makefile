@@ -5,7 +5,7 @@ TARGET=release
 TAG=latest
 
 build:
-	@podman build --file Containerfile --tag localhost/$(NAMESPACE):$(TAG)
+	@podman build --ssh default --file Containerfile --tag localhost/$(NAMESPACE):$(TAG)
 	@podman image tree localhost/$(NAMESPACE):$(TAG)
 
 run:

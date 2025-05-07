@@ -8,13 +8,18 @@ LABEL name="AlexStorm1313/codium" \
     description="Cloud native variant of Codium IDE accessible through a browser"
 
 # Enable RPMFusion & copr & flatpak
-RUN dnf -y update && \ 
+RUN curl https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm > session-manager-plugin.rpm && \
+    dnf install -y ./session-manager-plugin.rpm && \
+    rm -rf ./session-manager-plugin.rpm && \
+    dnf -y update && \
     dnf -y install dnf-plugins-core https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
     # dnf -y update && \
     dnf -y copr enable atim/starship && \
     dnf -y install \
     flatpak \
     starship \
+    awk \
+    awscli2 \
     git \
     gcc \
     clang \
@@ -45,7 +50,8 @@ RUN dnf -y update && \
     perl \
     @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin && \
     dnf -y swap ffmpeg-free ffmpeg --allowerasing && \
-    dnf -y clean all
+    dnf -y clean all && \
+    python -m ensurepip --upgrade
 
 # Systemwide a.k.a. root user
 ARG HOME_DIR=/root
@@ -92,7 +98,8 @@ RUN ${OPENVSCODE_SERVER} --force \
     --install-extension ms-toolsai.jupyter \
     --install-extension ms-azuretools.vscode-docker \
     --install-extension ms-kubernetes-tools.vscode-kubernetes-tools \
-    --install-extension usernamehw.errorlens
+    --install-extension usernamehw.errorlens \
+    --install-extension dannysteenman.aws-cloudformation-extension-pack
 
 # Install Rust and Cargo tools
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
@@ -101,6 +108,9 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | sh
+
+# Install CloudFormation linter
+RUN pip3 install cfn-lint[full]
 
 # Specify okd release
 ARG OKD_RELEASE_VERSION=4.13.0-0.okd-2023-06-04-080300
@@ -156,6 +166,7 @@ RUN echo 'eval "$(starship init bash)"' >> ${HOME_DIR}/.bashrc && \
     echo 'source /etc/profile.d/bash_completion.sh' >> ${HOME_DIR}/.bash_profile && \
     echo 'eval "$(ssh-agent -s)"' >> ${HOME_DIR}/.bash_profile && \
     echo 'eval "$(ssh-add ${HOME}/.ssh/privatekey)"' >> ${HOME_DIR}/.bash_profile && \
+    echo 'complete -C "aws_completer" aws' >> ${HOME_DIR}/.bashrc && \
     rustup default stable
 
 # Changing ownership and user rights to support following use-cases:
