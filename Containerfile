@@ -20,6 +20,9 @@ RUN curl https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_
     starship \
     awk \
     awscli2 \
+    oci-cli \
+    azure-cli \
+    opentofu && \
     git \
     gcc \
     clang \
