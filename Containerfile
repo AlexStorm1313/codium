@@ -22,7 +22,7 @@ RUN curl https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_
     awscli2 \
     oci-cli \
     azure-cli \
-    opentofu && \
+    opentofu \
     git \
     gcc \
     clang \
