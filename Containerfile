@@ -11,6 +11,7 @@ LABEL name="AlexStorm1313/codium" \
 RUN curl https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm > session-manager-plugin.rpm && \
     dnf install -y ./session-manager-plugin.rpm && \
     rm -rf ./session-manager-plugin.rpm && \
+    curl https://rpm.releases.hashicorp.com/fedora/hashicorp.repo > /etc/yum.repos.d/hashicorp.repo && \
     dnf -y update && \
     dnf -y install dnf-plugins-core https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
     # dnf -y update && \
@@ -22,6 +23,7 @@ RUN curl https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_
     awscli2 \
     oci-cli \
     azure-cli \
+    terraform-ls \
     opentofu \
     git \
     gcc \
@@ -51,6 +53,7 @@ RUN curl https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_
     ripgrep \
     fira-code-fonts \
     perl \
+    zig \
     @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin && \
     dnf -y swap ffmpeg-free ffmpeg --allowerasing && \
     dnf -y clean all && \
@@ -107,7 +110,8 @@ RUN ${OPENVSCODE_SERVER} --force \
 # Install Rust and Cargo tools
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
     cargo install cargo-watch && \
-    cargo install diesel_cli --no-default-features --features "postgres mysql"
+    cargo install diesel_cli --no-default-features --features "postgres mysql" && \
+    cargo install cargo-lambda
 
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | sh
