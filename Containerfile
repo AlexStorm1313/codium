@@ -46,6 +46,7 @@ RUN curl https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_
     libpq-devel \
     unzip \
     nodejs \
+    npm \
     java-latest-openjdk.x86_64 \
     java-latest-openjdk-devel.x86_64 \
     neovim \
@@ -67,7 +68,7 @@ ENV PATH=${HOME_DIR}/.cargo/bin:${HOME_DIR}/.bun/bin:${HOME_DIR}/.local/bin:${PA
 WORKDIR ${HOME_DIR}
 
 # Specify openvscode-server release, SHOULD MOVE THIS DOWN AFTER INSTALLING TOOLING
-ARG OPENVSCODE_SERVER_RELEASE_VERSION=1.98.2
+ARG OPENVSCODE_SERVER_RELEASE_VERSION=1.103.1
 ARG OPENVSCODE_SERVER_RELEASE_TAG=openvscode-server-v${OPENVSCODE_SERVER_RELEASE_VERSION}
 ARG OPENVSCODE_SERVER_RELEASE_ORG=gitpod-io
 ARG OPENVSCODE_SERVER_INSTALL_DIR=${HOME_DIR}/.openvscode-server
@@ -196,3 +197,4 @@ USER ${UID}
 # Start openvscode-server
 ENV PORT=3000
 ENTRYPOINT [ "/bin/sh", "-c", "exec ${OPENVSCODE_SERVER} --host 0.0.0.0 --port ${PORT} --without-connection-token \"${@}\"", "--" ]
+# CMD [ "${OPENVSCODE_SERVER} --host 0.0.0.0 --port ${PORT} --without-connection-token \"${@}\"", "--" ]
