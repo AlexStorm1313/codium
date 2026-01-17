@@ -18,6 +18,8 @@ RUN curl https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_
     dnf -y copr enable atim/starship && \
     dnf -y install \
     flatpak \
+    php \
+    composer \
     starship \
     awk \
     awscli2 \
