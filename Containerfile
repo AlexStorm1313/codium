@@ -1,5 +1,10 @@
 FROM fedora:latest
 
+ARG USER=codium
+ARG UID=1001
+ARG GID=0
+ARG HOME=/home/${USER}
+
 LABEL name="AlexStorm1313/codium" \
     vendor="AlexStorm1313" \
     version="0.0.1" \
@@ -22,8 +27,7 @@ RUN curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/
     'gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg' \
     'metadata_expire=1h' \
     > /etc/yum.repos.d/vscodium.repo && \
-    dnf -y install \
-        dnf-plugins-core \
+    dnf -y install dnf-plugins-core \
         "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
         "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm" && \
     # Update with all repos active
@@ -40,84 +44,69 @@ RUN curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/
         codium \
         fira-code-fonts \
         git \
+        hostname \
+        libpq-devel \
         oci-cli \
         opentofu \
         podman \
         procps \
         rust \
+        rustup \
         starship \
         terraform-ls \
-        tini && \
+        tini \
+        unzip && \
     # Cleanup
     dnf -y clean all && \
-    rm -rf /var/cache/dnf
-
-# User and permissions, a.k.a. userspace
-ARG USER=codium
-ARG UID=1001
-ARG GID=0
-ARG HOME=/home/${USER}
-
-# Add the user
-RUN groupadd ${USER} && \
-    useradd ${USER} -g ${UID} -d ${HOME} -m
-
-# Install extensions systemwide
-RUN codium --user-data-dir ${HOME}/.vscodium-server/data --extensions-dir ${HOME}/.vscodium-server/extensions --force \
-    --install-extension WakaTime.vscode-wakatime
-    # --install-extension rust-lang.rust-analyzer \
-    # --install-extension bradlc.vscode-tailwindcss \
-    # --install-extension tamasfe.even-better-toml \
-    # --install-extension redhat.vscode-yaml \ 
-    # --install-extension serayuzgur.crates \
-    # --install-extension Continue.continue \
-    # --install-extension ms-toolsai.jupyter \
-    # --install-extension ms-azuretools.vscode-docker \
-    # --install-extension ms-kubernetes-tools.vscode-kubernetes-tools \
-    # --install-extension usernamehw.errorlens \
-    # --install-extension dannysteenman.aws-cloudformation-extension-pack
-
-# # Install Rust and Cargo tools
-# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-#     cargo install cargo-watch && \
-#     cargo install diesel_cli --no-default-features --features "postgres mysql" && \
-#     cargo install cargo-lambda
-
-# # Install Bun
-# RUN curl -fsSL https://bun.sh/install | sh
-
-# # Install CloudFormation linter
-# RUN pip3 install cfn-lint[full]
-
-# # Specify okd release
-# ARG OKD_RELEASE_VERSION=4.13.0-0.okd-2023-06-04-080300
-# RUN curl -LO https://github.com/okd-project/okd/releases/download/${OKD_RELEASE_VERSION}/openshift-client-linux-${OKD_RELEASE_VERSION}.tar.gz && \
-#     tar -xzf openshift-client-linux-${OKD_RELEASE_VERSION}.tar.gz -C /usr/bin && \
-#     rm -rf openshift-client-linux-${OKD_RELEASE_VERSION}.tar.gz && \
-#     chmod +x /usr/bin/oc
-
-
+    rm -rf /var/cache/dnf && \
+    # Install Rust and Cargo tools
+    cargo install watchexec-cli && \
+    # cargo install beacon && \
+    cargo install diesel_cli --no-default-features --features "postgres" && \
+    cargo install cargo-lambda && \
+    # Install Bun
+    curl -fsSL https://bun.sh/install | sh
 
 # Set ENV variables
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV HOME=${HOME}
 ENV SHELL=/bin/bash
+ENV PATH=${HOME}/.cargo/bin:${HOME}/.bun/bin:${HOME}/.local/bin:${PATH}
 ENV EDITOR=codium
 ENV VISUAL=codium
 ENV GIT_EDITOR="codium --wait"
 
-# # Completions
-# RUN oc completion bash >> /etc/bash_completion.d/oc.bash_completion && \
-#     helm completion bash >> /etc/bash_completion.d/helm.bash_completion && \
-#     diesel completions bash >> /etc/bash_completion.d/diesel.bash_completion && \
-#     rustup completions bash rustup >> /etc/bash_completion.d/rustup.bash_completion && \
-#     rustup completions bash cargo >> /etc/bash_completion.d/cargo.bash_completion
+# Add the user
+RUN groupadd ${USER} && \
+    useradd ${USER} -g ${USER} -d ${HOME} -m
 
-# Configure and install tooling
-RUN echo 'eval "$(starship init bash)"' >> ${HOME}/.bashrc && \
+# Install extensions
+RUN codium --user-data-dir ${HOME}/.vscodium-server/data --extensions-dir ${HOME}/.vscodium-server/extensions --force \
+    --install-extension WakaTime.vscode-wakatime \
+    --install-extension rust-lang.rust-analyzer \
+    --install-extension bradlc.vscode-tailwindcss \
+    --install-extension tamasfe.even-better-toml \
+    --install-extension redhat.vscode-yaml \ 
+    --install-extension fill-labs.dependi \
+    --install-extension Continue.continue \
+    --install-extension saoudrizwan.claude-dev \
+    --install-extension ms-toolsai.jupyter \
+    --install-extension ms-azuretools.vscode-docker \
+    --install-extension ms-kubernetes-tools.vscode-kubernetes-tools \
+    --install-extension usernamehw.errorlens \
+    --install-extension HashiCorp.terraform
+
+# SHELL setup
+RUN diesel completions bash >> /etc/bash_completion.d/diesel.bash_completion && \
+    rustup completions bash rustup >> /etc/bash_completion.d/rustup.bash_completion && \
+    rustup completions bash cargo >> /etc/bash_completion.d/cargo.bash_completion && \
+    echo 'eval "$(starship init bash)"' >> ${HOME}/.bashrc && \
     echo 'source /etc/profile.d/bash_completion.sh' >> ${HOME}/.bash_profile && \
-    echo 'complete -C "aws_completer" aws' >> ${HOME}/.bashrc
+    echo 'eval "$(ssh-agent -s)"' >> ${HOME}/.bash_profile && \
+    echo 'eval "$(ssh-add ${HOME}/.ssh/privatekey)"' >> ${HOME}/.bash_profile && \
+    echo 'complete -C "aws_completer" aws' >> ${HOME}/.bashrc && \
+    echo 'complete -C "tofu" tofu' >> ${HOME}/.bashrc
 
 # Changing ownership and user rights to support following use-cases:
 # 1) running container on OpenShift, whose default security model
@@ -135,7 +124,6 @@ RUN chown -R ${UID}:${GID} ${HOME} && \
 
 # Set fixed non-root user for compatibility with Podman/Docker and Kubernetes
 USER ${UID}
-
 WORKDIR ${HOME}
 
 # Start openvscode-server
