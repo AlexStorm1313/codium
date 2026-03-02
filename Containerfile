@@ -12,6 +12,20 @@ LABEL name="AlexStorm1313/codium" \
     summary="Cloud native Codium" \
     description="Cloud native variant of Codium IDE accessible through a browser"
 
+# Set ENV variables
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV HOME=${HOME}
+ENV SHELL=/bin/bash
+ENV PATH=${HOME}/.cargo/bin:${HOME}/.bun/bin:${HOME}/.local/bin:${PATH}
+ENV SSH_AGENT="${SSH_AGENT:-/tmp/ssh-agent.env}"
+ENV EDITOR=codium
+ENV VISUAL=codium
+ENV GIT_EDITOR="codium --wait"
+
+RUN groupadd -g ${UID} ${USER} && \
+    useradd -u ${UID} -g ${UID} -m -s $SHELL ${USER}
+
 RUN curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm -o session-manager-plugin.rpm && \
     dnf install -y ./session-manager-plugin.rpm && \
     rm -f ./session-manager-plugin.rpm && \
@@ -40,9 +54,9 @@ RUN curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/
         awscli2 \
         azure-cli \
         bash-completion \
-        cargo \
         codium \
         fira-code-fonts \
+        gcc \
         git \
         hostname \
         libpq-devel \
@@ -50,36 +64,23 @@ RUN curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/
         opentofu \
         podman \
         procps \
-        rust \
         rustup \
         starship \
         terraform-ls \
         tini \
         unzip && \
-    # Cleanup
-    dnf -y clean all && \
-    rm -rf /var/cache/dnf && \
     # Install Rust and Cargo tools
+    rustup-init -y --profile=complete --default-toolchain=nightly && \
     cargo install watchexec-cli && \
     # cargo install beacon && \
     cargo install diesel_cli --no-default-features --features "postgres" && \
     cargo install cargo-lambda && \
     # Install Bun
-    curl -fsSL https://bun.sh/install | sh
-
-# Set ENV variables
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV HOME=${HOME}
-ENV SHELL=/bin/bash
-ENV PATH=${HOME}/.cargo/bin:${HOME}/.bun/bin:${HOME}/.local/bin:${PATH}
-ENV EDITOR=codium
-ENV VISUAL=codium
-ENV GIT_EDITOR="codium --wait"
-
-# Add the user
-RUN groupadd ${USER} && \
-    useradd ${USER} -g ${USER} -d ${HOME} -m
+    curl -fsSL https://bun.sh/install | sh && \
+    # Cleanup
+    dnf -y clean all && \
+    rm -rf /var/cache/dnf && \
+    rm -rf ${HOME}/.cargo/registry ${HOME}/.cargo/git
 
 # Install extensions
 RUN codium --user-data-dir ${HOME}/.vscodium-server/data --extensions-dir ${HOME}/.vscodium-server/extensions --force \
@@ -98,15 +99,26 @@ RUN codium --user-data-dir ${HOME}/.vscodium-server/data --extensions-dir ${HOME
     --install-extension HashiCorp.terraform
 
 # SHELL setup
-RUN diesel completions bash >> /etc/bash_completion.d/diesel.bash_completion && \
-    rustup completions bash rustup >> /etc/bash_completion.d/rustup.bash_completion && \
-    rustup completions bash cargo >> /etc/bash_completion.d/cargo.bash_completion && \
-    echo 'eval "$(starship init bash)"' >> ${HOME}/.bashrc && \
-    echo 'source /etc/profile.d/bash_completion.sh' >> ${HOME}/.bash_profile && \
-    echo 'eval "$(ssh-agent -s)"' >> ${HOME}/.bash_profile && \
-    echo 'eval "$(ssh-add ${HOME}/.ssh/privatekey)"' >> ${HOME}/.bash_profile && \
-    echo 'complete -C "aws_completer" aws' >> ${HOME}/.bashrc && \
-    echo 'complete -C "tofu" tofu' >> ${HOME}/.bashrc
+RUN printf '%s\n' \
+        'if [ -f "$SSH_AGENT" ]; then' \
+        '    source "$SSH_AGENT"' \
+        '    # Verify agent is running' \
+        '    if ! kill -0 "$SSH_AGENT_PID" 2>/dev/null; then' \
+        '        ssh-agent -s > "$SSH_AGENT"' \
+        '        source "$SSH_AGENT"' \
+        '    fi' \
+        'else' \
+        '    ssh-agent -s > "$SSH_AGENT"' \
+        '    source "$SSH_AGENT"' \
+        'fi'  >> ${HOME}/.bashrc && \
+    printf '%s\n' \
+        'for key in "$HOME/.ssh/id_"*; do' \
+        '    [ -f "$key" ] || continue' \
+        '    if ! ssh-add -l | grep -q "$(ssh-keygen -lf "$key" | awk '\''{print $2}'\'')"; then' \
+        '        ssh-add "$key" 2>/dev/null || true' \
+        '    fi' \
+        'done' >> ${HOME}/.bashrc && \
+    echo 'eval "$(starship init bash)"' >> ${HOME}/.bashrc
 
 # Changing ownership and user rights to support following use-cases:
 # 1) running container on OpenShift, whose default security model
