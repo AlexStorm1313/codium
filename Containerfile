@@ -101,26 +101,9 @@ RUN codium --user-data-dir ${HOME}/.vscodium-server/data --extensions-dir ${HOME
     --install-extension HashiCorp.terraform
 
 # SHELL setup
-RUN printf '%s\n' \
-        'if [ -f "$SSH_AGENT" ]; then' \
-        '    source "$SSH_AGENT"' \
-        '    # Verify agent is running' \
-        '    if ! kill -0 "$SSH_AGENT_PID" 2>/dev/null; then' \
-        '        ssh-agent -s > "$SSH_AGENT"' \
-        '        source "$SSH_AGENT"' \
-        '    fi' \
-        'else' \
-        '    ssh-agent -s > "$SSH_AGENT"' \
-        '    source "$SSH_AGENT"' \
-        'fi'  >> ${HOME}/.bashrc && \
-    printf '%s\n' \
-        'for key in "$HOME/.ssh/id_"*; do' \
-        '    [ -f "$key" ] || continue' \
-        '    if ! ssh-add -l | grep -q "$(ssh-keygen -lf "$key" | awk '\''{print $2}'\'')"; then' \
-        '        ssh-add "$key" 2>/dev/null || true' \
-        '    fi' \
-        'done' >> ${HOME}/.bashrc && \
-    echo 'eval "$(starship init bash)"' >> ${HOME}/.bashrc
+COPY .bashrc.d/ ${HOME}/.bashrc.d/
+
+RUN echo 'eval "$(starship init bash)"' >> ${HOME}/.bashrc
 
 # Changing ownership and user rights to support following use-cases:
 # 1) running container on OpenShift, whose default security model
