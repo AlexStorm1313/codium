@@ -32,14 +32,14 @@ RUN curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/
     # Register all repos first
     curl -fsSL https://rpm.releases.hashicorp.com/fedora/hashicorp.repo -o /etc/yum.repos.d/hashicorp.repo && \
     printf '%s\n' \
-    '[gitlab.com_paulcarroty_vscodium_repo]' \
-    'name=gitlab.com_paulcarroty_vscodium_repo' \
-    'baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/' \
-    'enabled=1' \
-    'gpgcheck=1' \
-    'repo_gpgcheck=1' \
-    'gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg' \
-    'metadata_expire=1h' \
+        '[gitlab.com_paulcarroty_vscodium_repo]' \
+        'name=gitlab.com_paulcarroty_vscodium_repo' \
+        'baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/' \
+        'enabled=1' \
+        'gpgcheck=1' \
+        'repo_gpgcheck=1' \
+        'gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg' \
+        'metadata_expire=1h' \
     > /etc/yum.repos.d/vscodium.repo && \
     dnf -y install dnf-plugins-core \
         "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
@@ -55,6 +55,7 @@ RUN curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/
         azure-cli \
         bash-completion \
         codium \
+        composer \
         fira-code-fonts \
         gcc \
         git \
@@ -62,6 +63,7 @@ RUN curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/
         libpq-devel \
         oci-cli \
         opentofu \
+        php \
         podman \
         procps \
         rustup \
