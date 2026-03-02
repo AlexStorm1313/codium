@@ -1,5 +1,10 @@
 FROM fedora:latest
 
+ARG USER=codium
+ARG UID=1001
+ARG GID=0
+ARG HOME=/home/${USER}
+
 LABEL name="AlexStorm1313/codium" \
     vendor="AlexStorm1313" \
     version="0.0.1" \
@@ -7,177 +12,115 @@ LABEL name="AlexStorm1313/codium" \
     summary="Cloud native Codium" \
     description="Cloud native variant of Codium IDE accessible through a browser"
 
-# Enable RPMFusion & copr & flatpak
-RUN curl https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm > session-manager-plugin.rpm && \
-    dnf install -y ./session-manager-plugin.rpm && \
-    rm -rf ./session-manager-plugin.rpm && \
-    curl https://rpm.releases.hashicorp.com/fedora/hashicorp.repo > /etc/yum.repos.d/hashicorp.repo && \
-    dnf -y update && \
-    dnf -y install dnf-plugins-core https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
-    # dnf -y update && \
-    dnf -y copr enable atim/starship && \
-    dnf -y install \
-    flatpak \
-    php \
-    composer \
-    starship \
-    awk \
-    awscli2 \
-    oci-cli \
-    azure-cli \
-    terraform-ls \
-    opentofu \
-    git \
-    gcc \
-    clang \
-    clang-libs \
-    podman \
-    bash-completion \
-    helm \
-    ImageMagick \
-    ImageMagick-devel \
-    ffmpeg-free \
-    ffmpeg-free-devel \
-    libavutil-free \
-    openssl \
-    openssl-devel \
-    iputils \
-    mariadb \
-    mariadb-devel \
-    libpq \
-    libpq-devel \
-    unzip \
-    nodejs \
-    npm \
-    java-latest-openjdk.x86_64 \
-    java-latest-openjdk-devel.x86_64 \
-    neovim \
-    python3-neovim \
-    ripgrep \
-    fira-code-fonts \
-    perl \
-    zig \
-    @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin && \
-    dnf -y swap ffmpeg-free ffmpeg --allowerasing && \
-    dnf -y clean all && \
-    python -m ensurepip --upgrade
-
-# Systemwide a.k.a. root user
-ARG HOME_DIR=/root
 # Set ENV variables
-ENV PATH=${HOME_DIR}/.cargo/bin:${HOME_DIR}/.bun/bin:${HOME_DIR}/.local/bin:${PATH}
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV HOME=${HOME}
+ENV SHELL=/bin/bash
+ENV PATH=${HOME}/.cargo/bin:${HOME}/.bun/bin:${HOME}/.local/bin:${PATH}
+ENV SSH_AGENT="${SSH_AGENT:-/tmp/ssh-agent.env}"
+ENV EDITOR=codium
+ENV VISUAL=codium
+ENV GIT_EDITOR="codium --wait"
 
-WORKDIR ${HOME_DIR}
+RUN groupadd -g ${UID} ${USER} && \
+    useradd -u ${UID} -g ${UID} -m -s $SHELL ${USER}
 
-# Specify openvscode-server release, SHOULD MOVE THIS DOWN AFTER INSTALLING TOOLING
-ARG OPENVSCODE_SERVER_RELEASE_VERSION=1.103.1
-ARG OPENVSCODE_SERVER_RELEASE_TAG=openvscode-server-v${OPENVSCODE_SERVER_RELEASE_VERSION}
-ARG OPENVSCODE_SERVER_RELEASE_ORG=gitpod-io
-ARG OPENVSCODE_SERVER_INSTALL_DIR=${HOME_DIR}/.openvscode-server
-ARG OPENVSCODE_SERVER=${OPENVSCODE_SERVER_INSTALL_DIR}/bin/openvscode-server
+RUN curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm -o session-manager-plugin.rpm && \
+    dnf install -y ./session-manager-plugin.rpm && \
+    rm -f ./session-manager-plugin.rpm && \
+    # Register all repos first
+    curl -fsSL https://rpm.releases.hashicorp.com/fedora/hashicorp.repo -o /etc/yum.repos.d/hashicorp.repo && \
+    printf '%s\n' \
+        '[gitlab.com_paulcarroty_vscodium_repo]' \
+        'name=gitlab.com_paulcarroty_vscodium_repo' \
+        'baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/' \
+        'enabled=1' \
+        'gpgcheck=1' \
+        'repo_gpgcheck=1' \
+        'gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg' \
+        'metadata_expire=1h' \
+    > /etc/yum.repos.d/vscodium.repo && \
+    dnf -y install dnf-plugins-core \
+        "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
+        "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm" && \
+    # Update with all repos active
+    dnf -y update && \
+    # Enable COPR (requires dnf-plugins-core)
+    dnf -y copr enable atim/starship && \
+    # Install all packages
+    dnf -y install \
+        awk \
+        awscli2 \
+        azure-cli \
+        bash-completion \
+        codium \
+        composer \
+        fira-code-fonts \
+        gcc \
+        git \
+        hostname \
+        libpq-devel \
+        oci-cli \
+        opentofu \
+        php \
+        podman \
+        procps \
+        rustup \
+        starship \
+        terraform-ls \
+        tini \
+        unzip && \
+    # Install Rust and Cargo tools
+    rustup-init -y --profile=complete --default-toolchain=nightly && \
+    cargo install watchexec-cli && \
+    # cargo install beacon && \
+    cargo install diesel_cli --no-default-features --features "postgres" && \
+    cargo install cargo-lambda && \
+    # Install Bun
+    curl -fsSL https://bun.sh/install | sh && \
+    # Cleanup
+    dnf -y clean all && \
+    rm -rf /var/cache/dnf && \
+    rm -rf ${HOME}/.cargo/registry ${HOME}/.cargo/git
 
-# Install openvscode-server
-RUN if [ -z "${OPENVSCODE_SERVER_RELEASE_TAG}" ]; then \
-    echo "The RELEASE_TAG build arg must be set." >&2 && \
-    exit 1; \
-    fi && \
-    arch=$(uname -m) && \
-    if [ "${arch}" = "x86_64" ]; then \
-    arch="x64"; \
-    elif [ "${arch}" = "aarch64" ]; then \
-    arch="arm64"; \
-    elif [ "${arch}" = "armv7l" ]; then \
-    arch="armhf"; \
-    fi && \
-    curl -LO https://github.com/${OPENVSCODE_SERVER_RELEASE_ORG}/openvscode-server/releases/download/${OPENVSCODE_SERVER_RELEASE_TAG}/${OPENVSCODE_SERVER_RELEASE_TAG}-linux-${arch}.tar.gz && \
-    tar -xzf ${OPENVSCODE_SERVER_RELEASE_TAG}-linux-${arch}.tar.gz && \
-    mv -f ${OPENVSCODE_SERVER_RELEASE_TAG}-linux-${arch} ${OPENVSCODE_SERVER_INSTALL_DIR} && \
-    cp ${OPENVSCODE_SERVER_INSTALL_DIR}/bin/remote-cli/openvscode-server ${OPENVSCODE_SERVER_INSTALL_DIR}/bin/remote-cli/code && \
-    rm -f ${OPENVSCODE_SERVER_RELEASE_TAG}-linux-${arch}.tar.gz
-
-# Install extensions systemwide
-RUN ${OPENVSCODE_SERVER} --force \
+# Install extensions
+RUN codium --user-data-dir ${HOME}/.vscodium-server/data --extensions-dir ${HOME}/.vscodium-server/extensions --force \
     --install-extension WakaTime.vscode-wakatime \
     --install-extension rust-lang.rust-analyzer \
     --install-extension bradlc.vscode-tailwindcss \
     --install-extension tamasfe.even-better-toml \
     --install-extension redhat.vscode-yaml \ 
-    --install-extension serayuzgur.crates \
+    --install-extension fill-labs.dependi \
     --install-extension Continue.continue \
+    --install-extension saoudrizwan.claude-dev \
     --install-extension ms-toolsai.jupyter \
     --install-extension ms-azuretools.vscode-docker \
     --install-extension ms-kubernetes-tools.vscode-kubernetes-tools \
     --install-extension usernamehw.errorlens \
-    --install-extension dannysteenman.aws-cloudformation-extension-pack
+    --install-extension HashiCorp.terraform
 
-# Install Rust and Cargo tools
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-    cargo install cargo-watch && \
-    cargo install diesel_cli --no-default-features --features "postgres mysql" && \
-    cargo install cargo-lambda
-
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | sh
-
-# Install CloudFormation linter
-RUN pip3 install cfn-lint[full]
-
-# Specify okd release
-ARG OKD_RELEASE_VERSION=4.13.0-0.okd-2023-06-04-080300
-RUN curl -LO https://github.com/okd-project/okd/releases/download/${OKD_RELEASE_VERSION}/openshift-client-linux-${OKD_RELEASE_VERSION}.tar.gz && \
-    tar -xzf openshift-client-linux-${OKD_RELEASE_VERSION}.tar.gz -C /usr/bin && \
-    rm -rf openshift-client-linux-${OKD_RELEASE_VERSION}.tar.gz && \
-    chmod +x /usr/bin/oc
-
-# Completions
-RUN oc completion bash >> /etc/bash_completion.d/oc.bash_completion && \
-    helm completion bash >> /etc/bash_completion.d/helm.bash_completion && \
-    diesel completions bash >> /etc/bash_completion.d/diesel.bash_completion && \
-    rustup completions bash rustup >> /etc/bash_completion.d/rustup.bash_completion && \
-    rustup completions bash cargo >> /etc/bash_completion.d/cargo.bash_completion
-
-# User and permissions, a.k.a. userspace
-ARG USER=codium
-ARG UID=1001
-ARG GID=0
-ARG HOME_DIR=/home/${USER}
-
-# Add the user
-RUN groupadd ${USER} && \
-    useradd -g ${USER} ${USER}
-
-# Make directories
-RUN mkdir -p ${HOME_DIR}/.openvscode-server/data && \
-    mkdir -p ${HOME_DIR}/.openvscode-server/data/CachedProfilesData && \
-    mkdir -p ${HOME_DIR}/.openvscode-server/data/Machine && \
-    mkdir -p ${HOME_DIR}/.openvscode-server/data/User && \
-    mkdir -p ${HOME_DIR}/.openvscode-server/data/logs && \
-    mkdir -p ${HOME_DIR}/.openvscode-server/extensions && \
-    mkdir -p ${HOME_DIR}/workspace
-
-WORKDIR ${HOME_DIR}
-
-# Set ENV variables
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV HOME=${HOME_DIR}
-ENV SHELL=/bin/bash
-ENV PATH=${HOME_DIR}/.cargo/bin:${HOME_DIR}/.bun/bin:${HOME_DIR}/.local/bin:${PATH}
-ENV EDITOR=code
-ENV VISUAL=code
-ENV GIT_EDITOR="code --wait"
-ENV OPENVSCODE_SERVER=${OPENVSCODE_SERVER_INSTALL_DIR}/bin/openvscode-server
-
-# NvChad
-RUN git clone https://github.com/NvChad/starter ${HOME_DIR}/.config/nvim
-
-# Configure and install tooling
-RUN echo 'eval "$(starship init bash)"' >> ${HOME_DIR}/.bashrc && \
-    echo 'source /etc/profile.d/bash_completion.sh' >> ${HOME_DIR}/.bash_profile && \
-    echo 'eval "$(ssh-agent -s)"' >> ${HOME_DIR}/.bash_profile && \
-    echo 'eval "$(ssh-add ${HOME}/.ssh/privatekey)"' >> ${HOME_DIR}/.bash_profile && \
-    echo 'complete -C "aws_completer" aws' >> ${HOME_DIR}/.bashrc && \
-    rustup default stable
+# SHELL setup
+RUN printf '%s\n' \
+        'if [ -f "$SSH_AGENT" ]; then' \
+        '    source "$SSH_AGENT"' \
+        '    # Verify agent is running' \
+        '    if ! kill -0 "$SSH_AGENT_PID" 2>/dev/null; then' \
+        '        ssh-agent -s > "$SSH_AGENT"' \
+        '        source "$SSH_AGENT"' \
+        '    fi' \
+        'else' \
+        '    ssh-agent -s > "$SSH_AGENT"' \
+        '    source "$SSH_AGENT"' \
+        'fi'  >> ${HOME}/.bashrc && \
+    printf '%s\n' \
+        'for key in "$HOME/.ssh/id_"*; do' \
+        '    [ -f "$key" ] || continue' \
+        '    if ! ssh-add -l | grep -q "$(ssh-keygen -lf "$key" | awk '\''{print $2}'\'')"; then' \
+        '        ssh-add "$key" 2>/dev/null || true' \
+        '    fi' \
+        'done' >> ${HOME}/.bashrc && \
+    echo 'eval "$(starship init bash)"' >> ${HOME}/.bashrc
 
 # Changing ownership and user rights to support following use-cases:
 # 1) running container on OpenShift, whose default security model
@@ -190,13 +133,14 @@ RUN echo 'eval "$(starship init bash)"' >> ${HOME_DIR}/.bashrc && \
 # UID=1001 && GID=0
 # UID=<any>&& GID=0
 # UID=1001 && GID=<any>
-RUN chown -R ${UID}:${GID} ${HOME_DIR} && \
-    chmod -R g=u ${HOME_DIR}
+RUN chown -R ${UID}:${GID} ${HOME} && \
+    chmod -R g=u ${HOME}
 
 # Set fixed non-root user for compatibility with Podman/Docker and Kubernetes
 USER ${UID}
+WORKDIR ${HOME}
 
 # Start openvscode-server
 ENV PORT=3000
-ENTRYPOINT [ "/bin/sh", "-c", "exec ${OPENVSCODE_SERVER} --host 0.0.0.0 --port ${PORT} --without-connection-token \"${@}\"", "--" ]
-# CMD [ "${OPENVSCODE_SERVER} --host 0.0.0.0 --port ${PORT} --without-connection-token \"${@}\"", "--" ]
+ENTRYPOINT ["tini", "--"]
+CMD ["/bin/sh", "-c", "exec codium serve-web --host 0.0.0.0 --port \"${PORT}\" --without-connection-token \"$@\"", "--"]
