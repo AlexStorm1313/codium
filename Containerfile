@@ -66,6 +66,7 @@ RUN curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/
         php \
         podman \
         procps \
+        rsync \
         rustup \
         starship \
         terraform-ls \
