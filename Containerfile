@@ -75,7 +75,7 @@ RUN curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/
     # Install Rust and Cargo tools
     rustup-init -y --profile=complete --default-toolchain=nightly && \
     cargo install watchexec-cli && \
-    # cargo install beacon && \
+    cargo install bacon && \
     cargo install diesel_cli --no-default-features --features "postgres" && \
     cargo install cargo-lambda && \
     # Install Bun
