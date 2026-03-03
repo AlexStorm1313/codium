@@ -106,6 +106,9 @@ COPY .bashrc.d/ ${HOME}/.bashrc.d/
 
 RUN echo 'eval "$(starship init bash)"' >> ${HOME}/.bashrc
 
+# Easier to later mount ssh_keys and keep the map writable
+RUN mkdir -p ${HOME}/.ssh
+
 # Changing ownership and user rights to support following use-cases:
 # 1) running container on OpenShift, whose default security model
 #    is to run the container under random UID, but GID=0
